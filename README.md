@@ -27,29 +27,36 @@ The following objects form the core of the system and collaborate to manage end-
 
 ## User Action Flow
 
-All user-facing operations in the system are driven through the `LockerSystem` class. Below is the typical user action flow, represented by its core public methods:
+The Amazon Locker System supports the full user lifecycle from package delivery to pickup. The operations are orchestrated through the public methods of the `LockerSystem` class, as outlined below:
 
-1. **addLocker(Locker locker)**  
-   Adds a new locker (containing multiple slots) to the system. Typically called during system setup or by an admin.
+1. **allocateSlot(Package package)**  
+   Allocates an appropriate slot for the incoming package by:  
+   - Retrieving available slots using `getAvailableSlots()`  
+   - Filtering by size via the configured `SlotFilterStrategy`  
+   - Selecting a slot using the `SlotAssignmentStrategy`  
 
-2. **allocateSlot(Package pkg, User user)**  
-   Allocates an appropriate slot for the given package.  
-   - Filters available slots using a `SlotFilterStrategy` (e.g., by size).  
-   - Chooses a slot using a `SlotAssignmentStrategy`.  
-   - Stores the package, generates an OTP, and links all information in a `Receipt`.
 
-3. **notifyUser(Receipt receipt)**  
-   Sends locker location and OTP information to the user (e.g., buyer) after allocation.
+2. **getAvailableSlots()**  
+   Returns a list of currently unoccupied slots across all lockers.  
+   Used internally during allocation.  
 
-4. **validateOtp(String slotId, String otp)**  
-   Called when a user arrives at the locker and submits their OTP.  
-   - Validates the OTP using the `OtpRepository`.  
-   - Grants or denies access to the slot accordingly.
+3. **generateOtp(Slot slot)**  
+   Generates a secure One-Time Password (OTP) for the allocated slot.  
+   The OTP is stored in the `OtpRepository` for later validation.  
+   
+4. **notifyUser(Receipt receipt)**  
+   Notifies the recipient (e.g., buyer) with locker and OTP details, enabling them to retrieve the package.  
 
-5. **deallocateSlot(String slotId)**  
-   Frees the slot after successful pickup or if the package expires after a timeout window.
 
-These methods encapsulate the full user journey, from package drop-off to secure retrieval.
+5. **validateOtp(Slot slot, String otp)**  
+   Validates the user-submitted OTP during locker access.  
+   Grants access to the slot if the OTP matches the stored value.  
+
+
+6. **deallocateSlot(Receipt receipt)**  
+   Finalizes the transaction by clearing the slot, making it available for future use.  
+   Typically triggered after successful package pickup or expiration (e.g., 2 days).  
+  
 
 ---
 
